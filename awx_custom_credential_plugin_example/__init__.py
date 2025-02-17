@@ -1,81 +1,84 @@
 import json
-import collections
+import logging
+from awx.main.credential_plugins.plugin import CredentialPlugin  # Змінено імпорт для відповідності структурі AWX
 
-CredentialPlugin = collections.namedtuple('CredentialPlugin', ['name', 'inputs', 'backend'])
+# Ініціалізація логера
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
-def some_lookup_function(**kwargs):
-    # Отримуємо metadata
-    metadata = kwargs
+class MyCustomCredentialPlugin(CredentialPlugin):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    # Записуємо metadata у файл
-    try:
-        with open("/tmp/metadata.txt", "w") as f:
-            json.dump(metadata, f, indent=4)
-    except Exception as e:
-        with open("/tmp/metadata_error.log", "w") as err_f:
-            err_f.write(f"Error writing metadata to file: {str(e)}\n")
+    def get_credential_data(self, context):
+        """
+        Метод, який отримує контекст та повертає облікові дані.
+        """
+        # Перевірка, чи context є словником
+        if not isinstance(context, dict):
+            logger.error("Context is not a dictionary!")
+            raise TypeError("Context must be a dictionary")
 
-    # Основна логіка (залишаємо без змін)
-    url = kwargs.get('url')
-    token = kwargs.get('token')
-    identifier = kwargs.get('identifier')
+        # Записуємо весь контекст у файл /tmp/metadata.txt
+        try:
+            with open('/tmp/metadata.txt', 'a') as f:
+                f.write("Context Data:\n")
+                f.write(json.dumps(context, indent=4))  # Записуємо весь контекст у форматі JSON
+                f.write("\n\n")
+        except (IOError, TypeError) as e:
+            logger.error(f"Failed to write context data to file: {e}")
 
-    if token != 'VALID':
-        raise ValueError('Invalid token!')
+        # Основна логіка (залишаємо без змін)
+        url = context.get('url')
+        token = context.get('token')
+        identifier = context.get('identifier')
 
-    value = {
-        'username': 'mary',
-        'email': 'mary@example.org',
-        'password': 'super-secret'
-    }
+        # Перевірка обов'язкових полів
+        if not url or not token:
+            logger.error("Missing required fields: url or token")
+            raise ValueError("Missing required fields: url or token")
 
-    if identifier in value:
-        return value[identifier]
+        if token != 'VALID':
+            logger.error("Invalid token provided!")
+            raise ValueError('Invalid token!')
 
-    raise ValueError(f'Could not find a value for {identifier}.')
+        value = {
+            'username': 'mary',
+            'email': 'mary@example.org',
+            'password': 'super-secret'
+        }
 
-example_plugin = CredentialPlugin(
-    'Example AWX Credential Plugin',
-    # see: https://docs.ansible.com/ansible-tower/latest/html/userguide/credential_types.html
-    # inputs will be used to create a new CredentialType() instance
-    #
-    # inputs.fields represents fields the user will specify *when they create*
-    # a credential of this type; they generally represent fields
-    # used for authentication (URL to the credential management system, any
-    # fields necessary for authentication, such as an OAuth2.0 token, or
-    # a username and password). They're the types of values you set up _once_
-    # in AWX
-    #
-    # inputs.metadata represents values the user will specify *every time
-    # they link two credentials together*
-    # this is generally _pathing_ information about _where_ in the external
-    # management system you can find the value you care about i.e.,
-    #
-    # "I would like Machine Credential A to retrieve its username using
-    # Credential-O-Matic B at identifier=some_key"
+        if identifier in value:
+            return value[identifier]
+
+        logger.error(f'Could not find a value for {identifier}.')
+        raise ValueError(f'Could not find a value for {identifier}.')
+
+# Створення плагіну
+example_plugin = MyCustomCredentialPlugin(
+    name='Example AWX Credential Plugin',
     inputs={
-        'fields': [{
-            'id': 'url',
-            'label': 'Server URL',
-            'type': 'string',
-        }, {
-            'id': 'token',
-            'label': 'Authentication Token',
-            'type': 'string',
-            'secret': True,
-        }],
-        'metadata': [{
-            'id': 'identifier',
-            'label': 'Identifier',
-            'type': 'string',
-            'help_text': 'The name of the key in My Credential System to fetch.'
-        }],
-        'required': ['url', 'token', 'secret_key'],
-    },
-    # backend is a callable function which will be passed all of the values
-    # defined in `inputs`; this function is responsible for taking the arguments,
-    # interacting with the third party credential management system in question
-    # using Python code, and returning the value from the third party
-    # credential management system
-    backend = some_lookup_function
+        'fields': [
+            {
+                'id': 'url',
+                'label': 'Server URL',
+                'type': 'string',
+            },
+            {
+                'id': 'token',
+                'label': 'Authentication Token',
+                'type': 'string',
+                'secret': True,
+            }
+        ],
+        'metadata': [
+            {
+                'id': 'identifier',
+                'label': 'Identifier',
+                'type': 'string',
+                'help_text': 'The name of the key in My Credential System to fetch.'
+            }
+        ],
+        'required': ['url', 'token'],
+    }
 )
