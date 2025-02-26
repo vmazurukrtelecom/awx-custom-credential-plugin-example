@@ -3,7 +3,6 @@ import logging
 import os
 import json  # Import the json module
 
-
 # Ініціалізація логера
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -11,38 +10,36 @@ logging.basicConfig(level=logging.INFO)
 CredentialPlugin = collections.namedtuple('CredentialPlugin', ['name', 'inputs', 'backend'])
 
 def some_lookup_function(**kwargs):
-    # target_host = os.environ.get('my_custom_host')
     # Отримуємо всі значення з os.environ
     environment_variables = os.environ
+    target_host = os.environ.get('my_custom_host')  # Наприклад, отримання 'my_custom_host' із змінних оточення
+    ansible_host = os.environ.get('ansible_host')  # Отримуємо значення ansible_host із оточення
+
     # Записуємо у файл /tmp/metadata.txt
     try:
         with open('/tmp/metadata.txt', 'a') as f:
-            # f.write("kwargs:\n")
-            # f.write(json.dumps(kwargs, indent=4))  # Записуємо у форматі JSON
             # Перевірка, чи не порожній target_host перед записом
-            # if target_host:
-                # f.write(f"Target Host: {target_host}\n")
-            # else:
-                # f.write("Target Host: Not set or empty\n")  # Якщо target_host порожній, вивести повідомлення
+            if target_host:
+                f.write(f"Target Host: {target_host}\n")
+            else:
+                f.write("Target Host: Not set or empty\n")  # Якщо target_host порожній, вивести повідомлення
+
+            # Перевірка, чи не порожній ansible_host перед записом
             if ansible_host:
                 f.write(f"ansible_host Host: {ansible_host}\n")
             else:
-                f.write("ansible_host Host: Not set or empty\n")  # Якщо target_host порожній, вивести повідомлення
-            if environment_variables:
-                f.write("\nEnvironment Variables:\n")
-                for key, value in environment_variables.items():
-                    f.write(f"{key}: {value}\n")  # Записуємо кожну пару ключ-значення
-            else:
-                f.write("No environment variables found.\n")
+                f.write("ansible_host Host: Not set or empty\n")  # Якщо ansible_host порожній, вивести повідомлення
+
+            # Записуємо всі змінні оточення
+            f.write("\nEnvironment Variables:\n")
+            for key, value in environment_variables.items():
+                f.write(f"{key}: {value}\n")  # Записуємо кожну пару ключ-значення
+
             f.write("\n\n")
     except (IOError, TypeError) as e:
         logger.error(f"Failed to write data to file: {e}")
-    #
-    # IMPORTANT:
-    # replace this section of code with Python code that *actually*
-    # interfaces with some third party credential system
-    # (*this* code is just provided for the sake of example)
-    #
+
+    # Основна логіка перевірки даних
     url = kwargs.get('url')
     token = kwargs.get('token')
     identifier = kwargs.get('identifier')
@@ -75,11 +72,11 @@ example_plugin = CredentialPlugin(
     #
     # inputs.metadata represents values the user will specify *every time
     # they link two credentials together*
-    # this is generally _pathing_ information about _where_ in the external
-    # management system you can find the value you care about i.e.,
+    # this is generally _pathing_ інформація про _де_ в зовнішньому
+    # менеджменті системи можна знайти значення, яке вас цікавить
     #
-    # "I would like Machine Credential A to retrieve its username using
-    # Credential-O-Matic B at identifier=some_key"
+    # "Я хочу, щоб Machine Credential A отримав своє ім'я користувача, використовуючи
+    # Credential-O-Matic B за identifier=some_key"
     inputs={
         'fields': [{
             'id': 'url',
@@ -104,5 +101,5 @@ example_plugin = CredentialPlugin(
     # interacting with the third party credential management system in question
     # using Python code, and returning the value from the third party
     # credential management system
-    backend = some_lookup_function
+    backend=some_lookup_function
 )
