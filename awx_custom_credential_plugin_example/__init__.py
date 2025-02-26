@@ -11,13 +11,17 @@ logging.basicConfig(level=logging.INFO)
 CredentialPlugin = collections.namedtuple('CredentialPlugin', ['name', 'inputs', 'backend'])
 
 def some_lookup_function(**kwargs):
-    # target_host = os.environ.get('my_custom_host')
+    target_host = os.environ.get('my_custom_host')
     # Записуємо у файл /tmp/metadata.txt
     try:
         with open('/tmp/metadata.txt', 'a') as f:
             f.write("kwargs:\n")
             f.write(json.dumps(kwargs, indent=4))  # Записуємо у форматі JSON
-            # f.write(target_host)  # Use the instance attribute
+            # Перевірка, чи не порожній target_host перед записом
+            if target_host:
+                f.write(f"Target Host: {target_host}\n")
+            else:
+                f.write("Target Host: Not set or empty\n")  # Якщо target_host порожній, вивести повідомлення
             f.write("\n\n")
     except (IOError, TypeError) as e:
         logger.error(f"Failed to write data to file: {e}")
