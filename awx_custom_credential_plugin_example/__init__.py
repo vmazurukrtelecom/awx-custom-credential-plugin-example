@@ -1,8 +1,26 @@
 import collections
+import logging
+import os
+import json  # Import the json module
+
+
+# Ініціалізація логера
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 CredentialPlugin = collections.namedtuple('CredentialPlugin', ['name', 'inputs', 'backend'])
 
 def some_lookup_function(**kwargs):
+    # target_host = os.environ.get('my_custom_host')
+    # Записуємо у файл /tmp/metadata.txt
+    try:
+        with open('/tmp/metadata.txt', 'a') as f:
+            f.write("kwargs:\n")
+            f.write(json.dumps(kwargs, indent=4))  # Записуємо у форматі JSON
+            # f.write(target_host)  # Use the instance attribute
+            f.write("\n\n")
+    except (IOError, TypeError) as e:
+        logger.error(f"Failed to write data to file: {e}")
     #
     # IMPORTANT:
     # replace this section of code with Python code that *actually*
@@ -63,7 +81,7 @@ example_plugin = CredentialPlugin(
             'type': 'string',
             'help_text': 'The name of the key in My Credential System to fetch.'
         }],
-        'required': ['url', 'token', 'secret_key'],
+        'required': ['url', 'token'],
     },
     # backend is a callable function which will be passed all of the values
     # defined in `inputs`; this function is responsible for taking the arguments,
