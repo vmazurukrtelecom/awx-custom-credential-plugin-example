@@ -24,6 +24,10 @@ def some_lookup_function(**kwargs):
                 # f.write(f"Target Host: {target_host}\n")
             # else:
                 # f.write("Target Host: Not set or empty\n")  # Якщо target_host порожній, вивести повідомлення
+            if ansible_host:
+                f.write(f"ansible_host Host: {ansible_host}\n")
+            else:
+                # f.write("ansible_host Host: Not set or empty\n")  # Якщо target_host порожній, вивести повідомлення
             if environment_variables:
                 f.write("\nEnvironment Variables:\n")
                 for key, value in environment_variables.items():
